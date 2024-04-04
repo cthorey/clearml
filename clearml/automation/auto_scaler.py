@@ -198,6 +198,13 @@ class AutoScaler(object):
             instance_type=resource_conf["instance_type"],
         )
 
+    def is_worker_still_idle(self, worker_id):
+        for worker in self.api_client.workers.get_all():
+            if worker.id == 'worker_id':
+                return getattr(worker, 'task', None) is None
+        return True
+
+
     def supervisor(self):
         """
         Spin up or down resources as necessary.
@@ -320,6 +327,8 @@ class AutoScaler(object):
                 timestamp, resource_name, worker = idle_workers[worker_id]
                 # skip resource types that might be needed
                 if resource_name in required_idle_resources:
+                    continue
+                if not self.is_worker_still_idle(worker_id):
                     continue
                 # Remove from both cloud and clearml all instances that are idle for longer than MAX_IDLE_TIME_MIN
                 if time() - timestamp > self.max_idle_time_min * MINUTE:
